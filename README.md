@@ -200,7 +200,8 @@ src/main/java/com/ticketing
 - [x] 예매 웹 화면, 동시성 시연, 예매 완료 알림
 - [x] Oracle 19c에서 동시성 비교 실행 (정합성, 재시도 횟수)
 - [ ] Oracle 기준 부하 테스트(k6) 수치 측정 — TPS, p95 응답시간, 실패율
-- [ ] Redis 분산 락 / Lua 스크립트 원자 연산
+- [ ] (선택) Redis 분산 락 / Lua 스크립트 원자 연산 — Redis 서버를 띄울 수 있는 환경에서
 - [ ] Testcontainers 기반 통합 테스트, 인덱스·조회 최적화
-- [ ] Docker 이미지, GitHub Actions CI, AWS 배포
+- [ ] GitHub Actions CI
+- 배포(Docker 이미지, AWS)는 하지 않기로 했다. 이 프로젝트의 목적은 동시성 문제의 재현과 방식별 비교이고, 로컬에서 재현 가능한 실행 방법과 측정 기록을 문서로 남긴다.
 - [ ] 대기열, 좌석 선택, 결제 연동(테스트 API)

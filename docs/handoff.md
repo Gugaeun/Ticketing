@@ -28,10 +28,12 @@ Docker 없이 할 수 있는 것:
 2. 인덱스·조회 최적화와 쿼리 개선 기록(실행 계획 비교), 테스트 보강.
 3. GitHub Actions CI(H2 기준 테스트).
 
-Docker(또는 Redis 서버)가 필요한 것:
-4. **Redis 방식 구현과 비교** — 원자 연산(Lua 스크립트 또는 DECR), 분산 락(Redisson 등).
-5. Dockerfile, AWS 배포, 접속 가능한 URL, Testcontainers 통합 테스트.
-6. (선택) 대기열, 좌석 선택, 결제 연동(테스트 API).
+하지 않기로 한 것:
+- Dockerfile, AWS 배포, 접속 가능한 URL — 이 프로젝트의 핵심(동시성 문제 재현과 비교)과 거리가 있어서 제외했다. 로컬에서 재현 가능한 실행 방법과 측정 기록으로 대신한다.
+
+Redis 서버를 띄울 수 있을 때만 (선택):
+4. **Redis 방식 구현과 비교** — 원자 연산(Lua 스크립트 또는 DECR), 분산 락(Redisson 등). Docker 없이는 Redis를 띄우기 어려워 필수로 두지 않는다.
+5. (선택) 대기열, 좌석 선택, 결제 연동(테스트 API), Testcontainers 통합 테스트.
 
 ## 3. 집 PC 준비
 
