@@ -441,8 +441,9 @@ async function loadMine() {
 }
 async function loadPerformances() {
   const kw = $('#keyword').value.trim();
-  const page = await api('/api/performances?size=50' + (kw ? '&keyword=' + encodeURIComponent(kw) : ''));
-  details = await Promise.all((page.content || []).map((p) => api('/api/performances/' + p.id)));
+  // 목록과 회차를 한 번의 요청으로 받는다 (공연마다 상세를 따로 호출하던 N+1 제거)
+  const page = await api('/api/performances/with-schedules?size=50' + (kw ? '&keyword=' + encodeURIComponent(kw) : ''));
+  details = page.content || [];
   renderBanner(); renderList(); renderMgmt(); if ($('#detailDialog').open) renderDetail();
   $('#sPerf').innerHTML = details.map((d) => `<option value="${d.id}">${esc(d.title)}</option>`).join('');
 }

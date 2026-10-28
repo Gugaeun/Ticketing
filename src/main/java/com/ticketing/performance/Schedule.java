@@ -9,6 +9,8 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
+// 공연의 회차 목록(where performance_id = ? order by start_at)용. 오라클은 FK 컬럼에 인덱스를 자동으로 만들지 않는다.
+@Table(indexes = @Index(name = "idx_schedule_performance_start", columnList = "performance_id, start_at"))
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Schedule {
@@ -21,7 +23,7 @@ public class Schedule {
     @JoinColumn(name = "performance_id")
     private Performance performance;
 
-    @Column(nullable = false)
+    @Column(name = "start_at", nullable = false)
     private LocalDateTime startAt;
 
     @Column(nullable = false)

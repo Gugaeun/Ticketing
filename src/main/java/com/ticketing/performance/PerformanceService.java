@@ -8,6 +8,10 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Service
 @RequiredArgsConstructor
 public class PerformanceService {
@@ -21,6 +25,19 @@ public class PerformanceService {
                 ? performanceRepository.findAll(pageable)
                 : performanceRepository.findByTitleContainingIgnoreCase(keyword.trim(), pageable);
         return page.map(PerformanceSummary::from);
+    }
+
+    /** 공연 목록과 각 공연의 회차를 한 번에 돌려준다. 쿼리는 (공연 페이지, 건수, 회차 IN 조회) 최대 3번으로 고정된다. */
+    @Transactional(readOnly = true)
+    public Page<PerformanceDetail> searchWithSchedules(String keyword, Pageable pageable) {
+        Page<Performance> page = (keyword == null || keyword.isBlank())
+                ? performanceRepository.findAll(pageable)
+                : performanceRepository.findByTitleContainingIgnoreCase(keyword.trim(), pageable);
+        List<Long> ids = page.getContent().stream().map(Performance::getId).toList();
+        Map<Long, List<Schedule>> schedulesByPerformance = ids.isEmpty() ? Map.of()
+                : scheduleRepository.findByPerformanceIds(ids).stream()
+                        .collect(Collectors.groupingBy(s -> s.getPerformance().getId()));
+        return page.map(p -> PerformanceDetail.from(p, schedulesByPerformance.getOrDefault(p.getId(), List.of())));
     }
 
     @Transactional(readOnly = true)

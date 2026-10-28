@@ -16,7 +16,8 @@ const ADMIN_EMAIL = __ENV.ADMIN_EMAIL || 'admin@ticketing.com';
 const ADMIN_PASSWORD = __ENV.ADMIN_PASSWORD || 'admin1234';
 
 // 200(예매 성공)과 409(재고 소진/충돌 한도 초과)는 정상 응답으로 본다. 그 외만 실패다.
-http.setResponseCallback(http.expectedStatuses(200, 409));
+// (회원가입은 201, 이미 가입된 bench 회원은 409 이므로 같이 정상으로 본다)
+http.setResponseCallback(http.expectedStatuses(200, 201, 409));
 
 const reserveDuration = new Trend('reserve_duration', true);
 const startTs = new Trend('reserve_start_ts');
@@ -51,7 +52,9 @@ export function setup() {
   const scheduleId = http.post(`${BASE_URL}/api/admin/performances/${performanceId}/schedules`,
     JSON.stringify({ startAt: start, ticketOpenAt: open, totalStock: STOCK }), adminAuth).json();
 
-  const emails = Array.from({ length: USERS }, (_, i) => `bench${run}_${i}@test.com`);
+  // 회원 이름을 고정해 두면 반복 실행할 때 두 번째부터는 가입이 409(이미 존재)로 끝나 setup 이 빨라지고,
+  // bench 회원이 실행마다 늘어나지 않는다. (정리: DELETE FROM members WHERE email LIKE 'bench%@test.com')
+  const emails = Array.from({ length: USERS }, (_, i) => `bench_${i}@test.com`);
   const tokens = [];
   for (let i = 0; i < USERS; i += 50) {
     const chunk = emails.slice(i, i + 50);
@@ -91,6 +94,8 @@ export function teardown(data) {
   if (schedule) {
     const oversold = Math.max(0, schedule.sold - schedule.totalStock);
     console.log(`[정합성] 재고=${schedule.totalStock}, 확정 예매=${schedule.sold}, 남은 재고=${schedule.remainingStock}, 초과 판매=${oversold}건`);
+    // 반복 측정 스크립트(repeat.ps1)가 읽는 기계용 한 줄 (한글 인코딩 문제를 피하려고 ASCII 로 출력)
+    console.log(`K6_INTEGRITY ${JSON.stringify({ stock: schedule.totalStock, sold: schedule.sold, remaining: schedule.remainingStock, oversold })}`);
   }
   http.del(`${BASE_URL}/api/admin/performances/${data.performanceId}`, null, auth);
 }
@@ -113,6 +118,13 @@ export function handleSummary(data) {
     `실패율(예상 밖 오류): ${failRate}%`,
     '정합성(초과 판매)은 위쪽의 [정합성] 로그를 확인하세요.',
     '==========================================',
+    // 반복 측정 스크립트(repeat.ps1)가 읽는 기계용 한 줄
+    `K6_RESULT ${JSON.stringify({
+      tps: Number(tps) || 0, avg: Number(f(v('reserve_duration', 'avg'))), med: Number(f(v('reserve_duration', 'med'))),
+      p95: Number(f(v('reserve_duration', 'p(95)'))), max: Number(f(v('reserve_duration', 'max'))),
+      failPct: Number(failRate) || 0, ok: v('reserved_ok', 'count'), rejected: v('rejected_409', 'count'),
+      unexpected: v('unexpected_error', 'count'), windowMs,
+    })}`,
     '',
   ];
   return { stdout: lines.join('\n') };

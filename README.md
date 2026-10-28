@@ -153,7 +153,16 @@ GRANT CONNECT, RESOURCE TO ticketing;
 - `ReservationApiTest`: 가입 → 로그인 → 예매/취소, 중복·재고 초과(409), 권한(401/403), 비동기 알림
 - `ReservationConcurrencyTest`: 락 방식별 동시성 비교 (결과가 콘솔에 출력됨)
 - `ConcurrencyDemoServiceTest`: 시연 기능과 임시 데이터(공연/회차/예매/시연용 회원) 정리
+- `PerformanceQueryCountTest`: 공연 목록(+회차) 조회의 SQL 실행 횟수(N+1 제거 효과)
 - 관리자 통계(확정 예매 기준 집계)와 공연 수정·삭제·오픈 시각 변경도 `ReservationApiTest`에서 검증
+
+### 반복 측정 (k6, 평균 ± 표준편차)
+
+앱을 측정할 방식으로 띄운 뒤 방식마다 한 번씩 실행합니다. 첫 1회는 워밍업으로 버리고 이어서 5회를 집계하며, 결과는 `k6/results/`에 CSV로도 저장됩니다.
+
+```powershell
+powershell -ExecutionPolicy Bypass -File .\k6\repeat.ps1 -Strategy pessimistic
+```
 
 ### 부하 테스트 (k6)
 앱을 측정할 DB 프로필과 재고 차감 방식으로 띄운 뒤, 프로젝트 폴더에서 실행합니다.
@@ -202,6 +211,7 @@ src/main/java/com/ticketing
 - [ ] Oracle 기준 부하 테스트(k6) 수치 측정 — TPS, p95 응답시간, 실패율
 - [ ] (선택) Redis 분산 락 / Lua 스크립트 원자 연산 — Redis 서버를 띄울 수 있는 환경에서
 - [ ] Testcontainers 기반 통합 테스트, 인덱스·조회 최적화
+- [x] 조회 최적화: 인덱스 2개 추가, 공연 목록 N+1 제거(SQL 23회 → 2회, 공연 11개 기준) ([`docs/query-optimization.md`](docs/query-optimization.md)) — 오라클 실행 계획 비교는 측정 전
 - [ ] GitHub Actions CI
 - 배포(Docker 이미지, AWS)는 하지 않기로 했다. 이 프로젝트의 목적은 동시성 문제의 재현과 방식별 비교이고, 로컬에서 재현 가능한 실행 방법과 측정 기록을 문서로 남긴다.
 - [ ] 대기열, 좌석 선택, 결제 연동(테스트 API)

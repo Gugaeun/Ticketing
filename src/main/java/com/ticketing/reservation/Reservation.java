@@ -10,7 +10,10 @@ import java.time.LocalDateTime;
 @Entity
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-@Table(uniqueConstraints = @UniqueConstraint(columnNames = {"member_id", "schedule_id"}))
+@Table(
+        uniqueConstraints = @UniqueConstraint(columnNames = {"member_id", "schedule_id"}),
+        // 회차별 확정 예매 수/판매량 집계(where schedule_id = ? and status = ?)용. unique 인덱스는 member_id 가 앞이라 쓸 수 없다.
+        indexes = @Index(name = "idx_reservation_schedule_status", columnList = "schedule_id, status"))
 public class Reservation {
 
     @Id
