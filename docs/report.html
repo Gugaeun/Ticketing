@@ -1,0 +1,119 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Ticketing 동시성 결과</title>
+<style>
+  :root {
+    --bg: #f7f7f5; --card: #ffffff; --text: #1d1d1b; --muted: #6b6b66; --line: #e3e3de;
+    --bad: #d9534f; --good: #2e8b57; --warn: #d8902f; --accent: #3b6fd4;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --bg: #17181a; --card: #202225; --text: #ececea; --muted: #9a9a94; --line: #34363a;
+      --bad: #ef7672; --good: #4fbf85; --warn: #e6a756; --accent: #7aa2f0;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--text);
+         font: 15px/1.6 system-ui, -apple-system, "Segoe UI", "Malgun Gothic", sans-serif; }
+  main { max-width: 880px; margin: 0 auto; padding: 32px 16px 64px; }
+  h1 { font-size: 26px; margin: 0 0 4px; }
+  h2 { font-size: 18px; margin: 36px 0 12px; }
+  p.sub { color: var(--muted); margin: 0 0 24px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 20px; }
+  .kpis { display: grid; grid-template-columns: repeat(auto-fit, minmax(190px, 1fr)); gap: 12px; }
+  .kpi .v { font-size: 30px; font-weight: 700; }
+  .kpi .l { color: var(--muted); font-size: 13px; }
+  .bad { color: var(--bad); } .good { color: var(--good); } .warn { color: var(--warn); }
+  .bar-row { display: grid; grid-template-columns: 150px 1fr 64px; gap: 12px; align-items: center; margin: 10px 0; }
+  .bar-row .name { font-size: 14px; }
+  .track { position: relative; height: 22px; background: var(--bg); border-radius: 6px; overflow: visible; }
+  .fill { height: 100%; border-radius: 6px; }
+  .limit { position: absolute; top: -6px; bottom: -6px; width: 0; border-left: 2px dashed var(--muted); }
+  .limit span { position: absolute; top: -20px; left: -22px; font-size: 12px; color: var(--muted); white-space: nowrap; }
+  .num { text-align: right; font-variant-numeric: tabular-nums; font-weight: 600; }
+  table { width: 100%; border-collapse: collapse; font-size: 14px; }
+  th, td { text-align: left; padding: 9px 10px; border-bottom: 1px solid var(--line); }
+  th { color: var(--muted); font-weight: 600; font-size: 13px; }
+  td.r, th.r { text-align: right; font-variant-numeric: tabular-nums; }
+  .tag { display: inline-block; padding: 1px 8px; border-radius: 999px; font-size: 12px; border: 1px solid var(--line); color: var(--muted); }
+  ul { padding-left: 20px; margin: 8px 0; } li { margin: 4px 0; }
+  .note { color: var(--muted); font-size: 13px; margin-top: 12px; }
+  @media (max-width: 560px) { .bar-row { grid-template-columns: 1fr 56px; } .bar-row .track { grid-column: 1 / -1; order: 3; } }
+</style>
+</head>
+<body>
+<main>
+  <h1>재고 100장, 동시 요청 1,000건</h1>
+  <p class="sub">공연 티켓 선착순 예매 · 재고 차감 방식별 동시성 비교 · 2026-10-28 실행 (H2 인메모리, 스레드 64개)</p>
+
+  <div class="kpis">
+    <div class="card kpi"><div class="v bad">765~886건</div><div class="l">락 없음: 재고보다 더 팔린 건수</div></div>
+    <div class="card kpi"><div class="v good">0건</div><div class="l">비관적 락 · 낙관적 락 초과 판매</div></div>
+    <div class="card kpi"><div class="v warn">410회</div><div class="l">낙관적 락 충돌로 인한 재시도</div></div>
+  </div>
+
+  <h2>확정된 예매 건수 (재고 100장)</h2>
+  <div class="card">
+    <div class="bar-row"><div class="name">락 없음 (1차)</div>
+      <div class="track"><div class="fill" style="width:100%;background:var(--bad)"></div><div class="limit" style="left:10.15%"><span>재고 100</span></div></div>
+      <div class="num bad">986</div></div>
+    <div class="bar-row"><div class="name">락 없음 (2차)</div>
+      <div class="track"><div class="fill" style="width:87.7%;background:var(--bad)"></div><div class="limit" style="left:10.15%"></div></div>
+      <div class="num bad">865</div></div>
+    <div class="bar-row"><div class="name">비관적 락</div>
+      <div class="track"><div class="fill" style="width:10.15%;background:var(--good)"></div><div class="limit" style="left:10.15%"></div></div>
+      <div class="num good">100</div></div>
+    <div class="bar-row"><div class="name">낙관적 락</div>
+      <div class="track"><div class="fill" style="width:10.15%;background:var(--good)"></div><div class="limit" style="left:10.15%"></div></div>
+      <div class="num good">100</div></div>
+    <p class="note">점선이 재고 100장입니다. 락 없음은 선을 크게 넘어 팔렸고, 락을 건 두 방식은 정확히 100건에서 멈췄습니다.</p>
+  </div>
+
+  <h2>상세 수치</h2>
+  <div class="card" style="overflow-x:auto">
+    <table>
+      <thead><tr><th>방식</th><th class="r">성공 응답</th><th class="r">확정 예매</th><th class="r">남은 재고</th><th class="r">초과 판매</th><th class="r">재시도</th></tr></thead>
+      <tbody>
+        <tr><td>락 없음 (1차)</td><td class="r">986</td><td class="r">986</td><td class="r">0</td><td class="r bad">886</td><td class="r">-</td></tr>
+        <tr><td>락 없음 (2차)</td><td class="r">865</td><td class="r">865</td><td class="r">0</td><td class="r bad">765</td><td class="r">-</td></tr>
+        <tr><td>비관적 락</td><td class="r">100</td><td class="r">100</td><td class="r">0</td><td class="r good">0</td><td class="r">-</td></tr>
+        <tr><td>낙관적 락</td><td class="r">100</td><td class="r">100</td><td class="r">0</td><td class="r good">0</td><td class="r">410</td></tr>
+      </tbody>
+    </table>
+    <p class="note">초과 판매 건수는 실행마다 달라지지만 락을 건 방식은 매번 0건이었습니다. 소요 시간은 단일 측정이라 속도 비교에는 쓰지 않습니다.</p>
+  </div>
+
+  <h2>무슨 일이 일어났나</h2>
+  <div class="card">
+    <ul>
+      <li><b>락 없음</b> — 여러 요청이 같은 재고 값을 동시에 읽고 각자 차감해 덮어써서(lost update), 재고 카운터는 0인데 예매 기록은 재고의 8~10배가 쌓였습니다.</li>
+      <li><b>비관적 락</b> — <code>SELECT ... FOR UPDATE</code>로 회차 행을 잠가 요청을 한 줄로 세웠습니다. 정합성은 확실하지만 같은 회차 요청이 대기합니다.</li>
+      <li><b>낙관적 락</b> — 잠그지 않고 읽은 뒤 version이 그대로일 때만 차감하고, 충돌하면 재시도합니다. 1,000건 중 410번 충돌해 재시도했습니다.</li>
+    </ul>
+  </div>
+
+  <h2>API 흐름 검증</h2>
+  <div class="card">
+    <p style="margin-top:0"><span class="tag">통과</span> <code>ReservationApiTest</code> 5개 시나리오</p>
+    <ul>
+      <li>재고만큼만 예매되고, 중복 예매와 재고 초과는 409</li>
+      <li>예매 취소 시 재고 복구</li>
+      <li>티켓 오픈 전 예매 거절</li>
+      <li>인증 없으면 401, 일반 회원이 관리자 API 호출 시 403</li>
+      <li>로그인 실패, 이메일 중복 처리</li>
+    </ul>
+  </div>
+
+  <h2>아직 확인되지 않은 것</h2>
+  <div class="card">
+    <ul>
+      <li>MySQL 기준 수치와 k6 부하 테스트(TPS, p95 응답시간, 실패율) — Docker가 필요해 이 PC에서는 측정하지 못했습니다.</li>
+      <li>Redis 분산 락 · Redis 원자 연산 방식 — 아직 구현하지 않았습니다.</li>
+    </ul>
+  </div>
+</main>
+</body>
+</html>

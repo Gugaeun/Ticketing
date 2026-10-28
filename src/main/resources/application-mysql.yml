@@ -1,0 +1,9 @@
+# docker compose up -d 로 띄운 MySQL 에 접속. 동시성/부하 측정은 이 프로필로 한다.
+spring:
+  datasource:
+    url: jdbc:mysql://localhost:3306/ticketing?serverTimezone=Asia/Seoul&characterEncoding=UTF-8
+    username: root
+    password: root
+  jpa:
+    hibernate:
+      ddl-auto: update

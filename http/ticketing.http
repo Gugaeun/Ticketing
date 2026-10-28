@@ -1,0 +1,62 @@
+### IntelliJ HTTP Client: 위에서부터 ▶ 로 차례로 실행 (앱을 먼저 실행해 둘 것)
+
+### 1. 관리자 로그인
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{"email": "admin@ticketing.com", "password": "admin1234"}
+
+> {% client.global.set("adminToken", response.body.accessToken); %}
+
+### 2. 공연 등록
+POST http://localhost:8080/api/admin/performances
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{"title": "테스트 콘서트", "venue": "올림픽홀", "description": "첫 공연"}
+
+> {% client.global.set("performanceId", response.body); %}
+
+### 3. 회차 등록 (재고 3)
+POST http://localhost:8080/api/admin/performances/{{performanceId}}/schedules
+Authorization: Bearer {{adminToken}}
+Content-Type: application/json
+
+{"startAt": "2026-12-01T19:00:00", "ticketOpenAt": "2026-10-01T10:00:00", "totalStock": 3}
+
+> {% client.global.set("scheduleId", response.body); %}
+
+### 4. 회원 가입
+POST http://localhost:8080/api/auth/signup
+Content-Type: application/json
+
+{"email": "user1@test.com", "password": "password123", "name": "홍길동"}
+
+### 5. 회원 로그인
+POST http://localhost:8080/api/auth/login
+Content-Type: application/json
+
+{"email": "user1@test.com", "password": "password123"}
+
+> {% client.global.set("userToken", response.body.accessToken); %}
+
+### 6. 공연 목록 (검색/페이징)
+GET http://localhost:8080/api/performances?keyword=콘서트&page=0&size=10
+
+### 7. 공연 상세 (회차/재고 확인)
+GET http://localhost:8080/api/performances/{{performanceId}}
+
+### 8. 예매
+POST http://localhost:8080/api/reservations
+Authorization: Bearer {{userToken}}
+Content-Type: application/json
+
+{"scheduleId": {{scheduleId}}, "quantity": 1}
+
+### 9. 내 예매 내역
+GET http://localhost:8080/api/reservations
+Authorization: Bearer {{userToken}}
+
+### 10. 예매 취소 (id 는 9번 결과에서 확인)
+DELETE http://localhost:8080/api/reservations/1
+Authorization: Bearer {{userToken}}

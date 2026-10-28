@@ -1,0 +1,31 @@
+# 기본값은 Docker 없이 실행되는 H2 인메모리 DB (재시작하면 데이터 초기화).
+# MySQL(docker compose) 로 실행하려면 프로필 mysql 을 활성화: --spring.profiles.active=mysql
+spring:
+  datasource:
+    url: jdbc:h2:mem:ticketing;MODE=MySQL;DB_CLOSE_DELAY=-1
+    username: sa
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: create
+    open-in-view: false
+    properties:
+      hibernate:
+        format_sql: true
+
+# 재고 차감 방식: none(락 없음, 비교용) | pessimistic | optimistic
+reservation:
+  strategy: pessimistic
+
+jwt:
+  # 운영에서는 환경변수로 교체할 것 (32바이트 이상)
+  secret: ${JWT_SECRET:dev-only-secret-key-change-me-0123456789abcdef}
+  expiration-minutes: 60
+
+admin:
+  email: ${ADMIN_EMAIL:admin@ticketing.com}
+  password: ${ADMIN_PASSWORD:admin1234}
+
+springdoc:
+  swagger-ui:
+    path: /swagger-ui.html
