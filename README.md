@@ -143,7 +143,7 @@ GRANT CONNECT, RESOURCE TO ticketing;
 
 - `ReservationApiTest`: 가입 → 로그인 → 예매/취소, 중복·재고 초과(409), 권한(401/403), 비동기 알림
 - `ReservationConcurrencyTest`: 락 방식별 동시성 비교 (결과가 콘솔에 출력됨)
-- `ConcurrencyDemoServiceTest`: 시연 기능과 임시 데이터 정리
+- `ConcurrencyDemoServiceTest`: 시연 기능과 임시 데이터(공연/회차/예매/시연용 회원) 정리
 - 관리자 통계(확정 예매 기준 집계)와 공연 수정·삭제·오픈 시각 변경도 `ReservationApiTest`에서 검증
 
 ### 부하 테스트 (k6)

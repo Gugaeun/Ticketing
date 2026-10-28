@@ -13,10 +13,12 @@ class ConcurrencyDemoServiceTest {
 
     @Autowired ConcurrencyDemoService demoService;
     @Autowired PerformanceRepository performanceRepository;
+    @Autowired com.ticketing.member.MemberRepository memberRepository;
 
     @Test
     void 비관적_락과_낙관적_락은_초과_판매가_없고_임시_데이터는_삭제된다() {
         long before = performanceRepository.count();
+        long membersBefore = memberRepository.count();
 
         for (String strategy : new String[]{"pessimistic", "optimistic"}) {
             ConcurrencyDemoService.Result result = demoService.run(strategy, 20, 200);
@@ -26,6 +28,7 @@ class ConcurrencyDemoServiceTest {
         }
 
         assertThat(performanceRepository.count()).isEqualTo(before);
+        assertThat(memberRepository.count()).isEqualTo(membersBefore); // 시연용 회원도 정리된다
     }
 
     @Test
