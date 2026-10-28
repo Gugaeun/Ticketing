@@ -19,7 +19,7 @@
 | 구분 | 사용 기술 |
 |---|---|
 | Backend | Java 17, Spring Boot 3.3, Spring Data JPA, Spring Security, JWT(jjwt) |
-| DB | H2(기본, 설치 불필요) / MySQL 8 (`mysql` 프로필) |
+| DB | **Oracle 19c** (`oracle` 프로필, 주 DB) / H2(기본, 설치 불필요) / MySQL 8 (`mysql` 프로필) |
 | 테스트 | JUnit 5, MockMvc, Awaitility, k6(부하 테스트 스크립트) |
 | 인프라 | Docker Compose(MySQL, Redis), Gradle 9 |
 | 문서 | springdoc-openapi (Swagger UI) |
@@ -181,7 +181,8 @@ src/main/java/com/ticketing
 - [x] 회원/공연/예매 API, JWT, Swagger
 - [x] 락 없음 → 비관적 락 → 낙관적 락 구현과 동시성 테스트, 수치 비교(H2)
 - [x] 예매 웹 화면, 동시성 시연, 예매 완료 알림
-- [ ] MySQL 기준 부하 테스트(k6) 수치 측정 — TPS, p95 응답시간, 실패율
+- [x] Oracle 19c에서 동시성 비교 실행 (정합성, 재시도 횟수)
+- [ ] Oracle 기준 부하 테스트(k6) 수치 측정 — TPS, p95 응답시간, 실패율
 - [ ] Redis 분산 락 / Lua 스크립트 원자 연산
 - [ ] Testcontainers 기반 통합 테스트, 인덱스·조회 최적화
 - [ ] Docker 이미지, GitHub Actions CI, AWS 배포

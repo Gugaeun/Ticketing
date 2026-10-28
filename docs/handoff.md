@@ -15,13 +15,23 @@
 
 H2 기준 측정 결과(재고 100, 동시 요청 1,000): 락 없음 초과 판매 765~900건 / 비관적 락 0건 / 낙관적 락 0건(재시도 약 360~410회).
 
-## 2. 아직 안 한 것 (Docker가 필요한 일 포함)
+## DB 결정: 오라클을 주 DB로 사용
 
-1. **MySQL 기준 부하 테스트(k6)** — TPS, p95 응답시간, 실패율을 측정해 `docs/benchmark.md`의 2번 표를 채운다.
-2. **Redis 방식 구현과 비교** — 원자 연산(Lua 스크립트 또는 DECR), 분산 락(Redisson 등).
-3. Testcontainers 기반 통합 테스트(MySQL/Redis), 인덱스·조회 최적화와 쿼리 개선 기록.
-4. Dockerfile, GitHub Actions CI, AWS 배포, 접속 가능한 URL.
-5. (선택) 대기열, 좌석 선택, 결제 연동(테스트 API).
+- 학원 PC에 오라클 19c가 있고 Docker 설치가 막혀 있어서, **주 DB는 오라클**로 정했다(`oracle` 프로필). 동시성 비교는 H2와 Oracle 19c에서 모두 실행해 같은 경향을 확인했다.
+- H2는 기본값(설치 불필요), MySQL은 Docker가 되는 곳에서 선택적으로 쓴다. 코드는 DB에 중립적으로 써서 세 DB 모두 동작한다.
+- 오라클 계정은 `scott`을 사용한다(수업용 `MEMBER` 테이블과 충돌하지 않도록 우리 회원 테이블은 `members`).
+
+## 2. 아직 안 한 것
+
+Docker 없이 할 수 있는 것:
+1. **오라클 기준 부하 테스트(k6)** — 앱을 `oracle` 프로필로 띄우고 TPS, p95 응답시간, 실패율을 측정해 `docs/benchmark.md`의 2번 표를 채운다. (k6 설치가 막히면 집에서)
+2. 인덱스·조회 최적화와 쿼리 개선 기록(실행 계획 비교), 테스트 보강.
+3. GitHub Actions CI(H2 기준 테스트).
+
+Docker(또는 Redis 서버)가 필요한 것:
+4. **Redis 방식 구현과 비교** — 원자 연산(Lua 스크립트 또는 DECR), 분산 락(Redisson 등).
+5. Dockerfile, AWS 배포, 접속 가능한 URL, Testcontainers 통합 테스트.
+6. (선택) 대기열, 좌석 선택, 결제 연동(테스트 API).
 
 ## 3. 집 PC 준비
 
@@ -29,7 +39,8 @@ H2 기준 측정 결과(재고 100, 동시 요청 1,000): 락 없음 초과 판�
 | 도구 | 설명 |
 |---|---|
 | **JDK 17** | 필수. Temurin 17 권장. Spring Boot 3은 17 미만에서 실행되지 않는다. |
-| **Docker Desktop** | MySQL, Redis, 부하 테스트에 필요. 설치 시 `WSL 2` 옵션을 켠다. |
+| **DB** | 집에서도 오라클로 하려면 Oracle Database XE(무료)를 설치하고 `oracle` 프로필의 계정/서비스명을 맞춘다. 설치하지 않으면 기본 H2로 실행된다. |
+| **Docker Desktop** | Redis, MySQL, 앱 이미지 빌드에 필요(오라클만 쓰면 선택). 설치 시 `WSL 2` 옵션을 켠다. |
 | **IDE (선택)** | 아래 참고. 없어도 터미널만으로 실행할 수 있다. |
 | **k6** | 부하 테스트용. https://k6.io (또는 `winget install k6`) |
 | **Git** | 저장소 받기. |
@@ -67,8 +78,8 @@ docker compose up -d
 ## 4. 집에서 할 일 (순서 제안)
 
 1. 위 방법으로 받아서 `./gradlew test`가 통과하는지 먼저 확인한다.
-2. `docker compose up -d` → `mysql` 프로필로 앱을 띄우고, 같은 동시성 테스트를 MySQL 기준으로 다시 돌린다(`ReservationConcurrencyTest`는 활성 프로필의 DB를 그대로 쓴다).
-3. k6 부하 테스트:
+2. (선택) `docker compose up -d` → `mysql` 프로필로 앱을 띄우고 같은 동시성 비교를 MySQL에서도 돌려 DB별 비교를 추가한다. 오라클 PC에서는 웹 화면의 `동시성 시연`으로 바로 비교할 수 있다.
+3. k6 부하 테스트(앱을 `oracle` 또는 `mysql` 프로필로 띄운 상태에서):
    ```bash
    k6 run -e BASE_URL=http://localhost:8080 k6/reserve.js
    ```
@@ -80,7 +91,9 @@ docker compose up -d
 
 - **재고 차감 방식은 인터페이스로 분리**: `ReservationService`(구현: `NoLockReservationService`, `PessimisticLockReservationService`, `OptimisticLockReservationService`). 빈 이름이 곧 전략 이름이고, `reservation.strategy`로 API가 쓸 구현을 고른다. 새 방식은 같은 인터페이스를 구현하고 빈 이름만 붙이면 된다.
 - **낙관적 락에 `@Version`을 쓰지 않았다**: 붙이면 "락 없음" 구현도 함께 보호되어 초과 판매를 재현할 수 없다. 대신 `version` 조건부 UPDATE(`decreaseStockIfVersionMatches`)로 같은 원리를 구현했다.
-- **기본 DB는 H2**: Docker가 막힌 PC에서도 실행되도록 기본값을 H2로 했다. MySQL은 `mysql` 프로필. H2 수치는 참고용이고 최종 수치는 MySQL에서 측정한다.
+- **기본 DB는 H2, 주 DB는 오라클**: Docker가 막힌 PC에서도 실행되도록 기본값을 H2로 했고, 실제 DB 측정은 `oracle` 프로필(Oracle 19c)로 한다. MySQL은 `mysql` 프로필(Docker)로 선택 사용. H2 수치는 참고용이다.
+- **오라클 주의**: `ddl-auto: update`는 이름이 겹치는 기존 테이블에 컬럼을 추가하려 하므로, 수업용 테이블이 있는 스키마에 쓸 때는 테이블 이름 충돌을 확인한다(회원 테이블을 `members`로 한 이유). `TEXT` 같은 DB 전용 타입은 쓰지 않는다.
+- **시연용 데이터는 정리한다**: 동시성 시연은 임시 공연/회차/예매와 시연용 회원을 실행 후 지운다.
 - **알림은 컨트롤러에서 이벤트 발행**: 예매 트랜잭션이 끝난 뒤에만 발행하고 `@Async`로 처리한다. 동시성 시연/테스트는 서비스를 직접 호출하므로 알림이 생기지 않는다.
 - **Gradle 9**: 테스트 실행에 `junit-platform-launcher`가 필요해 `build.gradle`에 선언해 두었다.
 - **줄바꿈**: `.gitattributes`로 `gradlew`를 LF로 고정했다(리눅스/WSL 실행용).
