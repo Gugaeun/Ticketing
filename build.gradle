@@ -28,7 +28,8 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.12.6'
     implementation 'org.springdoc:springdoc-openapi-starter-webmvc-ui:2.6.0'
     runtimeOnly 'com.mysql:mysql-connector-j'
-    runtimeOnly 'com.h2database:h2' // Docker 없이 실행하는 local 프로필용
+    runtimeOnly 'com.oracle.database.jdbc:ojdbc11:23.5.0.24.07' // oracle 프로필용 (19c 접속 가능)
+    runtimeOnly 'com.h2database:h2' // Docker 없이 실행하는 기본 프로필용
 
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'

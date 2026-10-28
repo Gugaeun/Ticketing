@@ -85,7 +85,8 @@ erDiagram
 
 - 락 없음의 초과 판매 건수는 4번 실행에서 886, 765, 800, 900건으로 매번 달랐고, 락을 건 두 방식은 매번 0건이었습니다. 한 번은 요청 1,000건이 전부 성공했는데 남은 재고 카운터는 3이었습니다(기록과 카운터의 불일치).
 - 낙관적 락은 1,000건 중 410번 충돌해 재시도했습니다. 이 재시도가 낙관적 락의 비용입니다.
-- 위 수치는 **H2에서 측정한 참고값**입니다. 소요 시간은 단일 측정이라 방식 간 속도 비교에는 쓰지 않았습니다.
+- 같은 비교를 **Oracle 19c**에서도 실행했습니다(1회): 락 없음 초과 판매 643건, 비관적 락 0건, 낙관적 락 0건(재시도 851회). DB가 달라도 같은 경향이 나왔고, 낙관적 락의 재시도 횟수는 H2(약 360~410회)보다 늘었습니다.
+- 위 표의 수치는 **H2에서 측정한 참고값**입니다. 소요 시간은 단일 측정이라 방식 간 속도 비교에는 쓰지 않았습니다.
 - 세부 기록: [`docs/benchmark.md`](docs/benchmark.md)
 
 관리자로 로그인하면 웹 화면의 **동시성 시연**에서 같은 비교를 직접 실행해 볼 수 있습니다.
@@ -116,11 +117,29 @@ docker compose up -d
 ./gradlew bootRun --args='--spring.profiles.active=mysql'
 ```
 
+### 3) 오라클로 실행 (Docker 불필요, 오라클 DB가 설치된 PC)
+
+SQL Developer 등으로 접속해 앱 전용 계정을 한 번 만든다(`SYSTEM` 같은 관리자 계정으로 실행).
+
+```sql
+CREATE USER ticketing IDENTIFIED BY ticketing123 QUOTA UNLIMITED ON USERS;
+GRANT CONNECT, RESOURCE TO ticketing;
+```
+
+```bash
+./gradlew bootRun --args='--spring.profiles.active=oracle'
+```
+
+- 접속 주소는 `jdbc:oracle:thin:@//localhost:1521/TESTDB` 이며, 서비스명/계정은 환경변수 `ORACLE_SERVICE`, `ORACLE_USER`, `ORACLE_PASSWORD` 로 바꾼다.
+- 테이블은 앱이 시작할 때 자동으로 만든다(`ddl-auto: update`). 기존 테이블에는 컬럼만 추가하고 지우지는 않으므로, **이름이 겹치는 테이블이 있는 스키마(예: 수업용 `scott`)에는 쓰지 않는다.** 회원 테이블은 충돌을 피하려고 `members`로 만든다.
+
 ### 테스트
 
 ```bash
 ./gradlew test
 ```
+
+동시성 비교를 실제 DB(MySQL/오라클)에서 돌리려면 테스트 실행 설정의 VM 옵션에 `-Dspring.profiles.active=oracle`(또는 `mysql`)을 준다.
 
 - `ReservationApiTest`: 가입 → 로그인 → 예매/취소, 중복·재고 초과(409), 권한(401/403), 비동기 알림
 - `ReservationConcurrencyTest`: 락 방식별 동시성 비교 (결과가 콘솔에 출력됨)

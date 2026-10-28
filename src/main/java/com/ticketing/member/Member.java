@@ -8,6 +8,7 @@ import lombok.NoArgsConstructor;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "members") // MEMBER 는 오라클 수업용 스키마 등에서 흔히 쓰이는 이름이라 충돌을 피한다.
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class Member {

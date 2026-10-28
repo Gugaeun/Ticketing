@@ -1,0 +1,10 @@
+# 오라클 DB(19c)에 접속. 사용법은 README 의 "오라클로 실행" 참고.
+# 계정/서비스명은 환경변수로 바꿀 수 있다 (기본값은 로컬 개발용).
+spring:
+  datasource:
+    url: jdbc:oracle:thin:@//localhost:1521/${ORACLE_SERVICE:TESTDB}
+    username: ${ORACLE_USER:ticketing}
+    password: ${ORACLE_PASSWORD:ticketing123}
+  jpa:
+    hibernate:
+      ddl-auto: update

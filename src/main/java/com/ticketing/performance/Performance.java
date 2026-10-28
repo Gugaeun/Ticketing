@@ -20,7 +20,8 @@ public class Performance {
     @Column(nullable = false)
     private String venue;
 
-    @Column(columnDefinition = "TEXT")
+    // TEXT 는 오라클에 없는 타입이라 DB 중립적인 길이 지정을 쓴다.
+    @Column(length = 2000)
     private String description;
 
     public Performance(String title, String venue, String description) {
