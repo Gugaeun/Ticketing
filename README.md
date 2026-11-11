@@ -23,6 +23,7 @@
 | DB | **Oracle 19c** (`oracle` 프로필, 주 DB) / H2(기본, 설치 불필요) / MySQL 8 (`mysql` 프로필) |
 | 테스트 | JUnit 5, MockMvc, Awaitility, k6(부하 테스트 스크립트) |
 | 인프라 | Docker Compose(MySQL, Redis), Gradle 9 |
+| Frontend | React 19, TypeScript, Vite (`frontend/`, 로컬 실행) |
 | 문서 | springdoc-openapi (Swagger UI) |
 
 ## 아키텍처
@@ -100,6 +101,15 @@ erDiagram
 - 세부 기록: [`docs/benchmark.md`](docs/benchmark.md)
 
 관리자로 로그인하면 웹 화면의 **동시성 시연**에서 같은 비교를 직접 실행해 볼 수 있습니다.
+
+## React 화면 (`frontend/`)
+
+백엔드 API를 호출하는 React + TypeScript 화면입니다(로컬 실행 기준, 실행 방법은 [`frontend/README.md`](frontend/README.md)). 로그인·회원가입, 공연 검색·페이징, 예매, 내 예매·취소를 브라우저에서 직접 확인했습니다. 알림·관리자·동시성 시연은 기존 웹 화면(`/`)을 사용합니다.
+
+<p>
+  <img src="docs/images/react-list.png" width="49%" alt="React 공연 목록과 예매">
+  <img src="docs/images/react-my.png" width="49%" alt="React 내 예매">
+</p>
 
 ## 예매 완료 알림 (비동기 이벤트)
 
@@ -208,6 +218,7 @@ src/main/java/com/ticketing
 - [x] 회원/공연/예매 API, JWT, Swagger
 - [x] 락 없음 → 비관적 락 → 낙관적 락 구현과 동시성 테스트, 수치 비교(H2)
 - [x] 예매 웹 화면, 동시성 시연, 예매 완료 알림
+- [x] React(TypeScript) 화면 연동: 로그인, 공연 검색, 예매, 내 예매·취소 (CORS 허용, 로컬 실행 기준)
 - [x] Oracle 19c에서 동시성 비교 실행 (정합성, 재시도 횟수)
 - [ ] Oracle 기준 부하 테스트(k6) 수치 측정 — TPS, p95 응답시간, 실패율
 - [ ] (선택) Redis 분산 락 / Lua 스크립트 원자 연산 — Redis 서버를 띄울 수 있는 환경에서
