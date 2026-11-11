@@ -10,9 +10,10 @@
 - 회원가입/로그인 (Spring Security + JWT), 일반 회원/관리자 권한 구분
 - 공연·회차 조회 (페이징, 제목 검색)
 - 티켓 예매/취소 (선착순, 재고 제한, 같은 회차 중복 예매 방지)
-- 내 예매 내역, **예매 완료·취소 알림** (비동기 이벤트 처리)
+- 내 예매 내역(공연명·장소·일시 포함), **예매 완료·취소 알림** (비동기 이벤트 처리)
 - 관리자: 공연/회차 등록·수정·삭제, 티켓 오픈 시간 변경, **판매 현황 대시보드**, **동시성 시연**
 - 예매 웹 화면 (`/`), Swagger 문서 (`/swagger-ui.html`)
+- 별도 주소의 프런트엔드(예: React 개발 서버 `localhost:5173`)에서 호출할 수 있도록 CORS 허용 (`cors.allowed-origins`로 변경)
 
 ## 기술 스택
 
@@ -184,7 +185,7 @@ k6 run -e USERS=1000 -e STOCK=100 k6/reserve.js
 | 구분 | 엔드포인트 |
 |---|---|
 | 인증 | `POST /api/auth/signup`, `POST /api/auth/login` |
-| 공연 | `GET /api/performances?keyword=&page=&size=`, `GET /api/performances/{id}` |
+| 공연 | `GET /api/performances?keyword=&page=&size=`, `GET /api/performances/with-schedules` (공연+회차 한 번에), `GET /api/performances/{id}` |
 | 예매 | `POST /api/reservations`, `GET /api/reservations`, `DELETE /api/reservations/{id}` |
 | 알림 | `GET /api/notifications`, `POST /api/notifications/read-all` |
 | 관리자 | `POST/PUT/DELETE /api/admin/performances`, `POST /api/admin/performances/{id}/schedules`, `PATCH /api/admin/schedules/{id}/ticket-open-at`, `GET /api/admin/stats`, `POST /api/admin/demo/concurrency` |
