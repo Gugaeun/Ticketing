@@ -172,6 +172,36 @@ class ReservationApiTest {
         return Long.parseLong(scheduleId);
     }
 
+    @Test
+    void 내_예매_목록에는_공연명과_장소가_함께_온다() throws Exception {
+        long scheduleId = createSchedule(5, LocalDateTime.now().minusDays(1));
+        String user = signupAndLogin();
+        reserve(user, scheduleId).andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/reservations").header("Authorization", bearer(user)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].scheduleId").value(scheduleId))
+                .andExpect(jsonPath("$[0].status").value("CONFIRMED"))
+                .andExpect(jsonPath("$[0].performanceTitle").value("콘서트"))
+                .andExpect(jsonPath("$[0].venue").value("올림픽홀"))
+                .andExpect(jsonPath("$[0].startAt").exists());
+    }
+
+    @Test
+    void React_개발_서버_출처의_CORS_요청을_허용한다() throws Exception {
+        mockMvc.perform(options("/api/reservations")
+                        .header("Origin", "http://localhost:5173")
+                        .header("Access-Control-Request-Method", "POST")
+                        .header("Access-Control-Request-Headers", "Authorization,Content-Type"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.header()
+                        .string("Access-Control-Allow-Origin", "http://localhost:5173"));
+
+        mockMvc.perform(options("/api/reservations").header("Origin", "http://evil.example")
+                        .header("Access-Control-Request-Method", "POST"))
+                .andExpect(status().isForbidden());
+    }
+
     private String signupAndLogin() throws Exception {
         String email = "user-" + UUID.randomUUID() + "@test.com";
         mockMvc.perform(post("/api/auth/signup").contentType(MediaType.APPLICATION_JSON)

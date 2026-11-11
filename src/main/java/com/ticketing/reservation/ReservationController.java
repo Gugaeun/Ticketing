@@ -1,6 +1,8 @@
 package com.ticketing.reservation;
 
 import com.ticketing.notification.ReservationEvents;
+import com.ticketing.performance.Schedule;
+import com.ticketing.performance.ScheduleRepository;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotNull;
@@ -9,8 +11,11 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 
+import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.function.Function;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/reservations")
@@ -18,12 +23,14 @@ public class ReservationController {
 
     private final ReservationService reservationService;
     private final ReservationRepository reservationRepository;
+    private final ScheduleRepository scheduleRepository;
     private final ApplicationEventPublisher events;
 
     /** reservation.strategy 값(빈 이름)에 해당하는 구현을 사용한다. 기본값은 pessimistic. */
     public ReservationController(Map<String, ReservationService> strategies,
                                  @Value("${reservation.strategy}") String strategy,
                                  ReservationRepository reservationRepository,
+                                 ScheduleRepository scheduleRepository,
                                  ApplicationEventPublisher events) {
         ReservationService selected = strategies.get(strategy);
         if (selected == null) {
@@ -31,6 +38,7 @@ public class ReservationController {
         }
         this.reservationService = selected;
         this.reservationRepository = reservationRepository;
+        this.scheduleRepository = scheduleRepository;
         this.events = events;
     }
 
@@ -54,8 +62,21 @@ public class ReservationController {
         }
     }
 
+    /** 예매 내역 + 공연 정보. 기존 Reservation 필드는 그대로 두고 화면에 필요한 공연명·장소·일시를 덧붙인다. */
+    public record MyReservation(Long id, Long memberId, Long scheduleId, int quantity, ReservationStatus status,
+                                LocalDateTime createdAt, String performanceTitle, String venue, LocalDateTime startAt) {}
+
     @GetMapping
-    public List<Reservation> mine(@AuthenticationPrincipal Long memberId) {
-        return reservationRepository.findByMemberId(memberId);
+    public List<MyReservation> mine(@AuthenticationPrincipal Long memberId) {
+        List<Reservation> reservations = reservationRepository.findByMemberId(memberId);
+        Map<Long, Schedule> schedules = scheduleRepository
+                .findAllWithPerformanceByIdIn(reservations.stream().map(Reservation::getScheduleId).distinct().toList())
+                .stream().collect(Collectors.toMap(Schedule::getId, Function.identity()));
+        return reservations.stream().map(r -> {
+            Schedule s = schedules.get(r.getScheduleId());
+            return new MyReservation(r.getId(), r.getMemberId(), r.getScheduleId(), r.getQuantity(), r.getStatus(),
+                    r.getCreatedAt(), s == null ? null : s.getPerformance().getTitle(),
+                    s == null ? null : s.getPerformance().getVenue(), s == null ? null : s.getStartAt());
+        }).toList();
     }
 }

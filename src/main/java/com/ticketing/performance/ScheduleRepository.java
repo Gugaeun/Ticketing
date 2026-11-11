@@ -16,6 +16,10 @@ public interface ScheduleRepository extends JpaRepository<Schedule, Long> {
 
     void deleteByPerformanceId(Long performanceId);
 
+    /** 내 예매 목록용: 회차와 공연을 한 번에 가져온다. */
+    @Query("select s from Schedule s join fetch s.performance where s.id in :ids")
+    List<Schedule> findAllWithPerformanceByIdIn(@Param("ids") java.util.Collection<Long> ids);
+
     /** 공연 목록 한 페이지의 회차를 한 번에 가져온다 (공연마다 따로 조회하는 N+1 방지). */
     @Query("select s from Schedule s join fetch s.performance where s.performance.id in :ids order by s.startAt")
     List<Schedule> findByPerformanceIds(@Param("ids") java.util.Collection<Long> ids);
