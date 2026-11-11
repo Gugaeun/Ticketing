@@ -1,0 +1,18 @@
+:root {
+  --green: #0f9d58;
+  --red: #e5484d;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --bg: #f6f8f7;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'Malgun Gothic', system-ui, sans-serif;
+  background: var(--bg);
+  color: #1f2937;
+}

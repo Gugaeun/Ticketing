@@ -13,7 +13,7 @@
 - 내 예매 내역(공연명·장소·일시 포함), **예매 완료·취소 알림** (비동기 이벤트 처리)
 - 관리자: 공연/회차 등록·수정·삭제, 티켓 오픈 시간 변경, **판매 현황 대시보드**, **동시성 시연**
 - 예매 웹 화면 (`/`), Swagger 문서 (`/swagger-ui.html`)
-- 별도 주소의 프런트엔드(예: React 개발 서버 `localhost:5173`)에서 호출할 수 있도록 CORS 허용 (`cors.allowed-origins`로 변경)
+- React(TypeScript) 화면 `frontend/` — 로그인·회원가입, 공연 검색·페이징, 예매, 내 예매·취소 (로컬 실행 기준, [실행 방법](frontend/README.md)). 백엔드는 CORS로 `localhost:5173`을 허용 (`cors.allowed-origins`로 변경)
 
 ## 기술 스택
 
